@@ -1,0 +1,455 @@
+====================================================================
+        ADDRESS BOOK PROJECT — COMPLETE KEYWORDS GUIDE
+        Learn every keyword, function, and concept used here
+====================================================================
+
+This file explains every important keyword, function, and concept
+used in this C project. Read it top to bottom once, then use it
+as a reference whenever you forget something.
+
+--------------------------------------------------------------------
+SECTION 1 — C KEYWORDS  (words that are part of the C language)
+--------------------------------------------------------------------
+
+KEYWORD       WHERE USED          WHAT IT DOES
+----------    ----------------    ----------------------------------
+
+int           Every file          Declares a whole-number variable.
+                                  Example:  int count = 0;
+                                  Range: roughly -2 billion to +2 billion.
+
+char          contact.h,          Declares a single character variable.
+              everywhere          Example:  char letter = 'A';
+                                  A char array becomes a "string":
+                                  char name[50];  →  holds up to 49 chars + '\0'
+
+void          Every .c file       Means "no value" or "no type".
+                                  Used when a function returns nothing:
+                                  void print_hello(void) { ... }
+                                  Also used to silence unused-parameter warnings:
+                                  (void)addressBook;
+
+struct        contact.h           Groups related variables under one name.
+                                  Example:
+                                  struct Contact {
+                                      char name[50];
+                                      char phone[15];
+                                  };
+                                  Creates a blueprint. You make an actual variable like:
+                                  struct Contact c;
+
+return        Every function      Exits a function and optionally sends a value back.
+                                  return 0;    → exits with value 0 (success in main)
+                                  return 1;    → exits with value 1 (used in is_valid_*)
+                                  return;      → exits a void function early
+
+while         helper.c,           Repeats a block as long as a condition is true.
+              addressbook.c       while (1)  →  infinite loop (use break to exit)
+                                  while (count < 10)  →  repeats 10 times
+
+for           addressbook.c       Repeats a block a set number of times.
+                                  for (i = 0; i < 5; i++)
+                                    first part: i = 0        → starting value
+                                    middle part: i < 5       → keep going while true
+                                    last part: i++           → do this after each step
+
+break         main.c,             Immediately exits the nearest while or for loop,
+              addressbook.c       or exits a switch case.
+
+continue      addressbook.c       Skips the rest of the current loop iteration
+                                  and goes back to the loop condition check.
+                                  Used in input-validation loops to re-ask the question.
+
+switch        main.c,             Compares one value against many possible cases.
+              addressbook.c       switch (choice) {
+                                      case 1: ...  break;
+                                      case 2: ...  break;
+                                      default: ...
+                                  }
+
+case          main.c              A branch inside switch. Must end with break
+                                  (otherwise it "falls through" to the next case).
+
+default       main.c              The catch-all branch in switch if no case matches.
+
+if / else     Every file          Runs code only when a condition is true.
+                                  if (x == 0) { ... }
+                                  else        { ... }
+
+static        addressbook.c       When used on a function, makes it visible only
+                                  inside the same .c file. Used on:
+                                    static void display_search_results(...)
+                                    static int  pick_contact_from_results(...)
+                                    static int  run_search_menu(...)
+                                  These are "private helpers" — other files cannot
+                                  call them, which keeps the code organised.
+
+const         addressbook.c       Makes a variable read-only (cannot be changed).
+                                  const char *label  →  the string label points to
+                                  cannot be modified through this pointer.
+
+NULL          Many places          A special pointer value meaning "points to nothing".
+                                  Used to check if fopen, strstr, strchr failed.
+                                  if (file == NULL) { ... }  →  file did not open
+
+
+--------------------------------------------------------------------
+SECTION 2 — PREPROCESSOR DIRECTIVES  (lines starting with #)
+--------------------------------------------------------------------
+
+#include "contact.h"    → Include our own header file (use quotes for local files).
+#include <stdio.h>      → Include a standard library header (use angle brackets).
+#include <string.h>     → String functions: strlen, strcpy, strcmp, strstr, etc.
+#include <ctype.h>      → Character functions: isdigit(), isalpha(), etc.
+#include <stdlib.h>     → General utilities (memory, exit). Included for future use.
+
+#ifndef CONTACT_H       → "If CONTACT_H is not defined yet..."
+#define CONTACT_H       → "...define it now." Together these two lines prevent the
+                          header from being included twice in the same compilation.
+#endif                  → Ends the #ifndef block.
+
+#define MAX_CONTACTS 100  → Defines a constant. Everywhere you write MAX_CONTACTS
+                            the compiler replaces it with 100 before compiling.
+                            Makes it easy to change: update one line, affects everywhere.
+
+
+--------------------------------------------------------------------
+SECTION 3 — STANDARD INPUT / OUTPUT FUNCTIONS  (<stdio.h>)
+--------------------------------------------------------------------
+
+printf(format, ...)
+  Prints formatted text to the screen.
+  Format specifiers:
+    %d   → integer         printf("%d", 42);     → 42
+    %s   → string          printf("%s", name);   → John
+    %c   → character       printf("%c", 'A');    → A
+    %-5d → left-aligned, width 5 (used in list_contacts for neat columns)
+    %-25s → left-aligned, width 25
+
+scanf(format, &variable)
+  Reads formatted input from the keyboard.
+  The & (address-of) operator is needed so scanf knows WHERE to store the value.
+  scanf("%d", &choice);   → reads an integer into choice
+  scanf(" %c", &ch);      → the space before %c skips whitespace (including '\n')
+  Returns the number of items successfully read.
+  IMPORTANT: leaves '\n' in the buffer — always follow with clear_input_buffer().
+
+fgets(string, size, stream)
+  Reads a line of text safely.
+  - Reads at most (size-1) characters
+  - Adds '\0' at the end automatically
+  - Includes the '\n' if there is room (we remove it with remove_newline)
+  - Does NOT overflow the buffer (safer than gets())
+  fgets(name, NAME_SIZE, stdin)  →  read from keyboard into name
+
+fscanf(file, format, &var1, &var2, ...)
+  Like scanf but reads from a FILE instead of the keyboard.
+  Returns the number of items successfully read.
+  Used in pull_file_data() to read CSV rows:
+    fscanf(file, " %49[^,],%14[^,],%49[^\n]", name, phone, email)
+
+  Format breakdown:
+    " "        → skip whitespace (spaces, tabs, newlines between rows)
+    %49[^,]    → read up to 49 chars, STOP when comma is found  → reads name
+    ,          → consume (skip over) the comma
+    %14[^,]    → read up to 14 chars, STOP when comma is found  → reads phone
+    ,          → consume the comma
+    %49[^\n]   → read up to 49 chars, STOP when newline found   → reads email
+    The [^X] syntax means "read any character EXCEPT X"
+
+fprintf(file, format, ...)
+  Like printf but writes to a FILE instead of the screen.
+  fprintf(file, "%s,%s,%s\n", name, phone, email);
+
+fopen(filename, mode)
+  Opens a file and returns a FILE pointer.
+  Modes:
+    "r"  → read only  (file must exist)
+    "w"  → write only (creates file if missing, ERASES existing content)
+    "a"  → append     (adds to end, creates if missing)
+  Returns NULL if the file cannot be opened.
+
+fclose(file)
+  Closes a file and flushes any buffered data to disk.
+  Always close what you open!
+
+getchar()
+  Reads a single character from the keyboard buffer.
+  Used in clear_input_buffer() to discard leftover characters:
+    while ((c = getchar()) != '\n' && c != EOF) { }
+
+
+--------------------------------------------------------------------
+SECTION 4 — STRING FUNCTIONS  (<string.h>)
+--------------------------------------------------------------------
+
+strlen(string)
+  Returns the number of characters in a string, NOT counting '\0'.
+  strlen("Hello") → 5
+
+strcpy(destination, source)
+  Copies source string into destination.
+  The destination must be large enough to hold source + '\0'.
+  strcpy(name, "Alice");
+
+strcmp(string1, string2)
+  Compares two strings character by character.
+  Returns 0 if they are identical.
+  Returns negative if string1 comes before string2 alphabetically.
+  Returns positive if string1 comes after string2 alphabetically.
+  We use it for exact matches: if (strcmp(phone1, phone2) == 0)
+
+strstr(haystack, needle)
+  Searches for 'needle' anywhere inside 'haystack'.
+  Returns a pointer to the first match, or NULL if not found.
+  We use it for partial/keyword search:
+    strstr(contact.name, "Ali")  →  matches "Alice", "Alison", "Bali", etc.
+
+strchr(string, character)
+  Finds the FIRST occurrence of character in string.
+  Returns a pointer to it, or NULL if not found.
+  Used in is_valid_email() to find '@'.
+
+strrchr(string, character)
+  Finds the LAST occurrence of character in string.
+  Returns a pointer to it, or NULL if not found.
+  Used in is_valid_email() to find the last '.'.
+
+strcspn(string, reject_set)
+  Returns the number of characters at the start of string
+  that are NOT in reject_set.
+  strcspn(name, "\n")  →  gives the index of the first '\n'
+  Used in remove_newline() to find and remove the '\n'.
+
+
+--------------------------------------------------------------------
+SECTION 5 — CHARACTER FUNCTIONS  (<ctype.h>)
+--------------------------------------------------------------------
+
+isdigit(character)
+  Returns non-zero (true) if the character is a digit ('0' to '9').
+  We cast to (unsigned char) to avoid undefined behaviour with non-ASCII.
+  isdigit('5')    → true
+  isdigit('a')    → false
+
+
+--------------------------------------------------------------------
+SECTION 6 — POINTERS  (the * and & symbols)
+--------------------------------------------------------------------
+
+A pointer holds the MEMORY ADDRESS of another variable, not the value itself.
+
+int x = 10;
+int *p = &x;   →  p stores the address of x
+*p = 20;       →  changes x to 20 through the pointer
+
+WHY FUNCTIONS USE POINTERS (struct AddressBook *addressBook):
+  In C, function arguments are COPIES by default. If add_contact received
+  the entire AddressBook struct as a value, it would work on a copy and
+  the original would not change. By passing a POINTER instead, the function
+  works directly on the original data.
+
+  addressBook->contactCount
+    The arrow (->) is shorthand for (*addressBook).contactCount
+    It dereferences the pointer and accesses the field.
+
+char *label  in display_search_results
+  A pointer to a constant string. The function receives the address of
+  the string, not a copy of all its characters. Efficient and safe.
+
+NULL
+  A pointer that points to nothing. Returned by fopen, strstr, strchr
+  when they fail or find nothing.
+
+
+--------------------------------------------------------------------
+SECTION 7 — ARRAYS
+--------------------------------------------------------------------
+
+char name[50]
+  An array of 50 characters. Indices: name[0] to name[49].
+  name[49] is always kept as '\0' (the string terminator).
+  Never write past the end — that is a buffer overflow bug.
+
+struct Contact contacts[MAX_CONTACTS]
+  An array of 100 Contact structs inside AddressBook.
+  contacts[0] is the first contact, contacts[99] is the last.
+
+int index_record[MAX_CONTACTS]
+  Stores the array INDICES (positions) of contacts that matched
+  a search. For example, if contacts[2] and contacts[7] matched:
+    index_record[0] = 2
+    index_record[1] = 7
+    ir_size = 2
+  We can then look them up: contacts[index_record[i]]
+
+
+--------------------------------------------------------------------
+SECTION 8 — STRUCTURES IN DETAIL
+--------------------------------------------------------------------
+
+struct Contact
+  Has three fields: name, phone, email.
+  Think of it like a row in a table.
+
+struct AddressBook
+  Has four fields:
+    contacts[]     — the actual array of Contact structs
+    contactCount   — how many slots are currently used
+    index_record[] — search result indices (positions)
+    ir_size        — how many search results are stored
+
+HOW STRUCTS ARE ACCESSED:
+  Direct variable:      contact.name
+  Through pointer:      addressBook->contacts[i].name
+    → addressBook is a pointer
+    → contacts[i] gives the i-th Contact struct
+    → .name gives the name field of that struct
+
+
+--------------------------------------------------------------------
+SECTION 9 — FILE HANDLING FLOW
+--------------------------------------------------------------------
+
+LOADING (pull_file_data):
+  1. fopen(filename, "r")   → open for reading
+  2. fscanf(...)            → read one row per loop iteration
+  3. fclose(file)           → close when done
+
+SAVING (push_data_to_file):
+  1. fopen(filename, "w")   → open for writing (erases old content)
+  2. fprintf(file, header)  → write "Name,Phone,Email\n"
+  3. for loop: fprintf(...)  → write one row per contact
+  4. fclose(file)           → close and flush to disk
+
+WHY fscanf OVER fgets FOR CSV:
+  fgets reads one whole line as a string, then you must manually split
+  it at the commas. fscanf with format specifiers like %49[^,] does the
+  splitting for you in one step — cleaner and less error-prone.
+  Your mentor's advice to prefer fscanf for structured CSV data is good.
+
+
+--------------------------------------------------------------------
+SECTION 10 — INPUT VALIDATION PATTERN
+--------------------------------------------------------------------
+
+The project uses this pattern everywhere for safe input:
+
+    while (1)                          /* loop forever until input is good */
+    {
+        printf("Enter value: ");
+        read_string(buffer, SIZE);     /* read safely with fgets */
+
+        if (value_is_bad(buffer))      /* check validity */
+        {
+            printf("Error message.\n");
+            continue;                  /* go back to top of loop */
+        }
+
+        if (already_exists(buffer))    /* check for duplicates */
+        {
+            printf("Duplicate.\n");
+            continue;
+        }
+
+        break;                         /* all checks passed — exit loop */
+    }
+
+This guarantees the program never stores invalid or duplicate data.
+
+
+--------------------------------------------------------------------
+SECTION 11 — THE SEARCH + PICK PATTERN  (Edit / Delete)
+--------------------------------------------------------------------
+
+Old approach: ask for phone number → find exact match → edit/delete.
+  Problem: slow, and fails if two people share a name but user
+           only remembers the name, not the phone.
+
+New approach:
+  1. run_search_menu()           → user chooses name/phone/email search
+  2. search_by_*()               → fills index_record[] with ALL matches
+  3. display_search_results()    → shows all matches numbered [1], [2], ...
+  4. pick_contact_from_results() → user types a number to choose one
+  5. edit or delete that contact
+
+Key insight: index_record[] stores POSITIONS, not copies.
+  When the user picks [2], we use index_record[1] to get the actual
+  position in contacts[], and operate directly on that slot.
+
+
+--------------------------------------------------------------------
+SECTION 12 — COMMON PITFALLS AND HOW WE AVOID THEM
+--------------------------------------------------------------------
+
+PITFALL 1: Buffer overflow
+  char name[10];
+  scanf("%s", name);   ← dangerous — user can type more than 10 chars
+  FIX: Use read_string() which calls fgets() with the correct size.
+
+PITFALL 2: Leftover '\n' in input buffer
+  scanf("%d", &choice);  ← reads "5" but leaves '\n' in buffer
+  fgets(name, ...);      ← reads the leftover '\n' immediately, appears to skip
+  FIX: Call clear_input_buffer() after every scanf.
+
+PITFALL 3: Comparing strings with ==
+  if (name1 == name2)   ← compares ADDRESSES, not content! Always false.
+  FIX: Use strcmp(name1, name2) == 0
+
+PITFALL 4: fgets leaves '\n' in the string
+  After fgets, name might be "Alice\n" instead of "Alice".
+  FIX: Call remove_newline() (done inside read_string automatically).
+
+PITFALL 5: Including a header file twice
+  If contact.h is included in both addressbook.c and helper.c,
+  and both are compiled together, the struct definitions appear twice.
+  FIX: The #ifndef / #define / #endif guard in contact.h prevents this.
+
+PITFALL 6: Deleting from the middle of an array leaves a gap
+  contacts[0] Alice
+  contacts[1] Bob      ← deleted
+  contacts[2] Carol
+  If we just mark [1] as empty, the array has a hole and loops break.
+  FIX: Shift every contact from [2] onwards one position left:
+       contacts[1] = contacts[2]    → Carol moves to [1]
+       contactCount--               → array now has 2 entries
+
+
+--------------------------------------------------------------------
+SECTION 13 — FUNCTION QUICK REFERENCE
+--------------------------------------------------------------------
+
+FILE: helper.c
+  remove_newline(str)              Strip trailing '\n' from a string
+  read_string(str, size)          Safe keyboard input using fgets
+  clear_input_buffer()            Discard leftover chars after scanf
+  is_valid_mobile(mobile)         Returns 1 if valid Indian mobile, 0 if not
+  is_valid_email(email)           Returns 1 if email format valid, 0 if not
+  phone_already_exists(ab,ph,ig)  Returns 1 if phone is duplicate, 0 if not
+  email_already_exists(ab,em,ig)  Returns 1 if email is duplicate, 0 if not
+
+FILE: addressbook.c
+  mobile_verify(mobile)           Print human-readable validation message
+  gmail_verify(ab, gmail)         Print human-readable validation message
+  pull_file_data(ab, filename)    Load contacts from CSV into memory
+  push_data_to_file(ab, filename) Save all contacts from memory to CSV
+  add_contact(ab)                 Interactive: collect and store new contact
+  list_contacts(ab)               Print all contacts in a formatted table
+  search_by_name(ab, name)        Partial match search, fills index_record[]
+  search_by_phone(ab, phone)      Partial match search, fills index_record[]
+  search_by_gmail(ab, email)      Partial match search, fills index_record[]
+  search_contact(ab)              Menu-driven wrapper for the three searches
+  edit_contact(ab)                Search → pick → edit chosen contact
+  delete_contact(ab)              Search → pick → confirm → delete contact
+
+  [static — internal only]
+  display_search_results(ab, lbl) Print all matches from index_record[]
+  pick_contact_from_results(ab)   Ask user to pick one match, return its index
+  run_search_menu(ab, label)      Search sub-menu shared by edit and delete
+
+FILE: main.c
+  main()                          Program entry point, loads data, runs menu loop
+
+====================================================================
+END OF KEYWORDS GUIDE
+====================================================================
