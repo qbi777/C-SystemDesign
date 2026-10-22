@@ -14,7 +14,10 @@ test_encode: test_encode.o encode.o
 %.o: %.c encode.h decode.h types.h common.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+test: $(TARGET)
+	bash run_tests.sh
+
 clean:
 	rm -f *.o $(TARGET) test_encode steged_img.bmp stego_img.bmp decoded.*
 
-.PHONY: all clean
+.PHONY: all test clean
