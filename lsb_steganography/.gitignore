@@ -1,0 +1,6 @@
+*.o
+lsb_steg
+test_encode
+steged_img.bmp
+stego_img.bmp
+decoded.*
